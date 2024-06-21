@@ -85,39 +85,41 @@ export async function refreshToken(
       return reply.status(403).send({ error: 'Refresh token expired' })
     }
 
-    jwt.verify(refreshToken, env.REFRESH_SECRET, async (err, decoded) => {
-      if (err) {
-        return reply.status(403).send({ error: 'Invalid refresh token' })
-      }
+    let decoded
 
-      if (
-        typeof decoded === 'object' &&
-        decoded !== null &&
-        'userId' in decoded
-      ) {
-        const userId = (decoded as { userId: string }).userId
-        const { accessToken, refreshToken: newRefreshToken } =
-          generateTokens(userId)
+    try {
+      decoded = jwt.verify(refreshToken, env.REFRESH_SECRET)
+    } catch (err) {
+      return reply.status(403).send({ error: 'Invalid refresh token' })
+    }
 
-        const now = new Date()
-        const accessExpiresAt = new Date(now.getTime() + 15 * 60 * 1000) // 15 min
-        const refreshExpiresAt = new Date(
-          now.getTime() + 7 * 24 * 60 * 60 * 1000,
-        ) // 7 days
+    if (
+      typeof decoded === 'object' &&
+      decoded !== null &&
+      'userId' in decoded
+    ) {
+      const userId = (decoded as { userId: string }).userId
+      const { accessToken, refreshToken: newRefreshToken } =
+        generateTokens(userId)
 
-        await knex('sessions').where({ id: session.id }).update({
-          token: accessToken,
-          refresh_token: newRefreshToken,
-          expires_at: accessExpiresAt,
-          refresh_expires_at: refreshExpiresAt,
-        })
+      const now = new Date()
+      const accessExpiresAt = new Date(now.getTime() + 15 * 60 * 1000) // 15 min
+      const refreshExpiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 days
 
-        reply.status(200).send({ accessToken, refreshToken: newRefreshToken })
-      } else {
-        reply.status(403).send({ error: 'Invalid token payload' })
-      }
-    })
+      await knex('sessions').where({ id: session.id }).update({
+        token: accessToken,
+        refresh_token: newRefreshToken,
+        expires_at: accessExpiresAt,
+        refresh_expires_at: refreshExpiresAt,
+      })
+
+      return reply
+        .status(201)
+        .send({ accessToken, refreshToken: newRefreshToken })
+    } else {
+      return reply.status(403).send({ error: 'Invalid token payload' })
+    }
   } catch (error) {
-    reply.status(500).send({ error: 'Error refreshing token' })
+    return reply.status(500).send({ error: 'Error refreshing token' })
   }
 }
