@@ -101,10 +101,12 @@ export async function getMeals(request: FastifyRequest, reply: FastifyReply) {
 
     reply.status(200).send({
       meals,
-      total_meals: meals.length,
-      meals_within_diet: mealsWithinDiet,
-      meals_out_diet: mealsOutDiet,
-      best_meal_sequence_within_diet: bestMealSequenceWithinTheDiet,
+      metrics: {
+        total_meals: meals.length,
+        meals_within_diet: mealsWithinDiet,
+        meals_out_diet: mealsOutDiet,
+        best_meal_sequence_within_diet: bestMealSequenceWithinTheDiet,
+      },
     })
   } catch (error) {
     reply.status(500).send({ error: 'Error getting meals!' })
