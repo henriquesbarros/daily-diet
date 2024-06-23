@@ -1,6 +1,9 @@
+import fp from 'fastify-plugin'
 import fastifyCookie from '@fastify/cookie'
 import { FastifyInstance } from 'fastify'
 
-export default async function cookiePlugin(fastify: FastifyInstance) {
+async function cookiePlugin(fastify: FastifyInstance) {
   fastify.register(fastifyCookie)
 }
+
+export default fp(cookiePlugin)
